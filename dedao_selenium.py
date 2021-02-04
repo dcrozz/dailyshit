@@ -2,9 +2,9 @@
 20200120 添加起始网页,下载课程数输入
 20200202 添加选项模式（最新开始，从页面开始）,去除重复输出
 20200203 添加序号，添加ffmpeg下载
+20200204 添加log
 TODO:
 1. 睡眠时间(判断对应的js出了就好？）
-2. 添加ffmpeg下载
 '''
 
 from selenium import webdriver
@@ -16,8 +16,17 @@ import json
 import time
 import sys
 import os
+import logging
+from ffmpy import FFmpeg
 
-print('Creating proxy server...')
+logging.basicConfig(level=logging.INFO,
+   filename='test.log',
+   filemode='a',
+   format=
+   '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
+   )
+
+logging.info('Creating proxy server...')
 server = Server('/Users/sycao/Downloads/dedao/browsermob-proxy-2.1.4/bin/browsermob-proxy')
 server.port = 8090
 server.start()
@@ -59,64 +68,67 @@ else:
     driver.get(course_url)
     time.sleep(5)
     try:
-        print("Start find Content")
+        logging.info("Start find Content")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//span[@class='content-tab']")))
         content_button = driver.find_element_by_xpath("//span[@class='content-tab']")
         content_button.click()
         time.sleep(5)
     except:
-        print("Content button can't find")
+        logging.error("Content button can't find")
 
     try:
-        print("Start find Filter")
+        logging.info("Start find Filter")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//div[@class='filter filter filter-select']/div[@class='bought-filter-right']")))
         filter_button = driver.find_element_by_xpath("//div[@class='filter filter filter-select']/div[@class='bought-filter-right']")
         filter_button.click()
         time.sleep(5)
     except:
-        print("Filter button can't find")
+        logging.error("Filter button can't find")
 
     try:
-        print("Start find Reverse")
+        logging.info("Start find Reverse")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//li[@attr='inverted']")))
         reverse_button = driver.find_element_by_xpath("//li[@attr='inverted']")
         reverse_button.click()
         time.sleep(5)
     except:
-        print("Reverse button can't find")
+        logging.error("Reverse button can't find")
 
     try:
-        print("Start find the first lesson")
+        logging.info("Start find the first lesson")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//div[@class='content']//li[@class='single-content']")))
         first_lesson = driver.find_element_by_xpath("//div[@class='content']//li[@class='single-content']")
         first_lesson.click()
         #第一次进课程页死慢，back的js可能没加载出来
         time.sleep(10)
     except:
-        print("The first lesson can't find")
+        logging.error("The first lesson can't find")
 
-#课程数量是
+#课程数量是i
 while i: 
     try:
-        print(str(i) + ' ' + "Start Find Play")
+        logging.info(str(i) + ' ' + "Start Find Play")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//div[@class='dd-audio']//span[@class='iconfont iget-common-f4 iget-icon-play']")))
         play = driver.find_element_by_xpath("//div[@class='dd-audio']//span[@class='iconfont iget-common-f4 iget-icon-play']")
         play.click()
-        print(str(i) + ' ' + "Play Clicked")
+        logging.info(str(i) + ' ' + "Play Clicked")
+        print("Lesson {} get".format(i))
     except:
-        print(str(i) + ' ' + "play button can't find")
+        logging.error(str(i) + ' ' + "play button can't find")
+        print("Lesson {} failed".format(i))
     try:
-        print(str(i) + ' ' + "Start Find Back")
+        logging.info(str(i) + ' ' + "Start Find Back")
         ele = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, "//aside[@class='iget-side-button iget-side-portrait']//div[@class='side-button-main']//button[@class='button iget-common-b4']")))
         back = driver.find_element_by_xpath("//aside[@class='iget-side-button iget-side-portrait']//div[@class='side-button-main']//button[@class='button iget-common-b4']")
         back.click()
-        print(str(i) + ' ' + "Back Clicked")
+        logging.info(str(i) + ' ' + "Back Clicked")
         time.sleep(3)
     except:
-        print(str(i) + ' ' + "back button can't find")
+        logging.error(str(i) + ' ' + "back button can't find")
     i = i-1
 
-print("OVER")
+
+logging.info("OVER")
 result = proxy.har
 with open('3.har', 'w') as outfile:
     json.dump(proxy.har, outfile)
@@ -134,7 +146,8 @@ for entry in result['log']['entries']:
             _title   = j["c"]['list'][0]["title"]
             _content = j["c"]['list'][0]["mp3_play_url"]
             print(str(i) + '. ' + _title)
-            print(_content)
+            logging.info(str(i) + '. ' + _title)
+            logging.info(_content)
             i = int(i) + 1
             url_titles.append([_title,_content])
     except:
@@ -142,18 +155,28 @@ for entry in result['log']['entries']:
             _response = entry['response']
             j = json.loads(_response['content']['text'])
             _title   = j["c"]['list'][0]["title"]
-            print(_title)
-        print(_url)
+            logging.info(_title)
+        logging.info(_url)
 server.stop()
 driver.quit()
 
 i = int(input("Download From: "))
 j = int(input("Download To: "))
-
 for url_title in url_titles[i-1:j+1]:
     url = url_title[1]
     title = url_title[0]
-    os.system('ffmpeg -protocol_whitelist "file,https,crypto,tcp,tls" -i {} -codec copy "{}.mp4"'.format(url,title))
+    # os.system('ffmpeg -protocol_whitelist "file,https,crypto,tcp,tls" -i {} -codec copy "{}.mp4 >> download.log"'.format(url,title))
+    try:
+        ff = FFmpeg(inputs={url:'-protocol_whitelist "file,https,crypto,tcp,tls"'},
+            outputs={'{}.mp4'.format(title):'-codec copy -loglevel error -y'})
+        logging.info(ff.cmd())
+        ff.run()
+    except:
+        logging.error(str(i) + ' ' + title + ' download failed')
+
+
+
+
 
 
 
