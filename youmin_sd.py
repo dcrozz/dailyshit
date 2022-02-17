@@ -7,6 +7,7 @@
 '''20201203添加reafile功能，定义checkfolder，addtask，getfoldname等函数'''
 '''20201206:优化全局变量名称，否则会urllist又重复取值'''
 '''20210108:修改26行正则，添加对不同class、style、algin的适配；网页支持2021;修改178行为range(1,50)，去掉第0页；添加timeout'''
+'''20220217:修改98行正则，添加页面上新的获取时间适配'''
 import re
 import requests
 import os
@@ -18,7 +19,7 @@ from aiohttp import TCPConnector
 import aiofiles
 from time import time
 
-os.chdir('/Users/sycao/Downloads/aria2/sd/')
+os.chdir('/home/alarm/sd/')
 
 src='<img class="picact".*?src="(.*?)"'
 detail='<img class="picact".*?</a><br>(.*?)</p>'
@@ -81,7 +82,8 @@ def getbaseurl():
     urlhtm2='<a class="img2 countHit" target="_blank" .*?</a>'
     #  herfhtm='https:.*?shtml'#图片发布页网址
     herfhtm='http.*?shtml'#图片发布页网址
-    datestr='gameshd/202[0|1]/(.*?)_.*?.jpg'
+    datestr1='gameshd/202[0|1|2]/(.*?)_.*?.jpg'
+    datestr2='upimg/new_preview/.*?_(.*?).jpg'
     title='<div class="txt">(.*?)</div>'
     urs1=re.compile(urlhtm1)
     urs2=re.compile(urlhtm2)
@@ -92,7 +94,10 @@ def getbaseurl():
 
     for i in divlist:
         urllist.append(re.search(herfhtm,i).group())
-        date = re.search(datestr,i).group(1)
+        try:
+            date = re.search(datestr1,i).group(1)
+        except AttributeError:
+            date = re.search(datestr2,i).group(1)[:8]
         title1=re.search(title,i).group(1)
         titlelist.append(date + '-' + title1)
 
@@ -205,3 +210,4 @@ asyncio.run(main())
 
 end =time()
 print ('Cost {} seconds'.format((end - start)))
+
