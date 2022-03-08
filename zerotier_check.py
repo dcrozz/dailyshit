@@ -14,11 +14,20 @@ def time_delta(lastOnline):
     b = datetime.fromtimestamp(lastOnline/1000)
     return a-b
 
+def color(text, color):
+    if color == 'red':
+        return '\33[91m' + text + '\33[0m'
+    elif color == 'green':
+        return '\33[92m' + text + '\33[0m'
+    else:
+        return text
+
 s = requests.session()
 members = s.get(url, headers = header ).content
 members = json.loads(members)
 for member in members:
     print('Name: ' + member['name'])
     print('IP: ' + member['config']['ipAssignments'][0])
-    print('Last Seen: ' + 'Online' if member['online'] else str(time_delta(member['lastOnline'])))
+    print('Last Seen: ', end="")
+    print(color('Online','green') if member['online'] else color(str(time_delta(member['lastOnline'])),'red'))
     print('')
